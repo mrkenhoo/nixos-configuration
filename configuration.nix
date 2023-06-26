@@ -55,6 +55,36 @@
     xkbVariant = "";
   };
 
+  # Update microcode for Intel CPUs
+  hardware.cpu.intel.updateMicrocode = true;
+
+  # Enable access to Intel SGX privisioning device
+  hardware.cpu.intel.sgx.provision.enable = true;
+
+  # Disable PulseAudio
+  hardware.pulseaudio.enable = false;
+
+  # Enable PipeWire
+  services.pipewire.enable = true;
+
+  # Set PipeWire as primary sound server
+  services.pipewire.audio.enable = true;
+
+  # Enable PipeWire's WirePlumber
+  services.pipewire.wireplumber.enable = true;
+
+  # Enable PipeWire PulseAudio emulation
+  services.pipewire.pulse.enable = true;
+
+  # Enable PipeWire JACK audio emulation
+  services.pipewire.jack.enable = true;
+
+  # Enable Pipewire ALSA support
+  services.pipewire.alsa.enable = true;
+
+  # Enable PipeWire's ALSA 32-bit support
+  services.pipewire.alsa.support32Bit = true;
+
   # Enable X11 server
   services.xserver.enable = true;
 
@@ -79,6 +109,9 @@
   # Enable SWTPM on libvirtd
   virtualisation.libvirtd.qemu.swtpm.enable = true;
 
+  # Enable KVMGT
+  virtualisation.kvmgt.enable = true;
+
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.mrkenhoo = {
     isNormalUser = true;
@@ -101,8 +134,30 @@
     OVMF
     virt-manager
     papirus-icon-theme
+    gnome-browser-connector
   ];
 
+  # Exclude GNOME applications
+  environment.gnome.excludePackages = (with pkgs; [
+    gnome-photos
+    gnome-tour
+  ]) ++ (with pkgs.gnome; [
+    cheese # webcam tool
+    gnome-music
+    gnome-terminal
+    gedit # old text editor
+    epiphany
+    geary # email reader
+    evince # document viewer
+    gnome-characters
+    totem # video player
+    tali # poker game
+    iagno # go game
+    hitori # sudoku game
+    atomix # puzzle game    
+  ]);
+
+  # Enable gnome-settings-daemon udev rules
   services.udev.packages = with pkgs; [
     gnome.gnome-settings-daemon
   ];
