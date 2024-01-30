@@ -1,21 +1,22 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
-
 { config, pkgs, ... }:
 
 {
-  nix = {
-    package = pkgs.nixUnstable;
-    extraOptions = ''
-      experimental-features = nix-command flakes
-    '';
-  };
-
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
     ];
+
+  hardware.opengl.driSupport = true;
+  hardware.opengl.driSupport32Bit = true;
+  hardware.opengl.extraPackages = with pkgs; [
+    amdvlk
+  ];
+
+  hardware.opengl.extraPackages32 = with pkgs; [
+    driversi686Linux.amdvlk
+  ];
+
+  boot.initrd.kernelModules = [ "amdgpu" ];
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
@@ -32,7 +33,7 @@
   networking.networkmanager.enable = true;
 
   # Set your time zone.
-  time.timeZone = "Europe/London";
+  time.timeZone = "Atlantic/Canary";
 
   # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
@@ -49,75 +50,69 @@
     LC_TIME = "en_US.UTF-8";
   };
 
+  # Enable the X11 windowing system.
+  services.xserver.enable = true;
+  # Enable SDDM
+  services.xserver.displayManager.sddm.enable = true;
+  # Enable plasma5
+  services.xserver.desktopManager.plasma5.enable = true;
+
+  # Exclude some bloat
+  environment.plasma5.excludePackages = with pkgs.libsForQt5; [
+    konsole
+    konqueror
+    discover
+    oxygen
+    plasma-vault
+    plasma-systemmonitor
+    gwenview
+    kate
+    okular
+    spectacle
+    ktexteditor
+    elisa
+    ark
+  ];
+
   # Configure keymap in X11
   services.xserver = {
     layout = "es";
     xkbVariant = "";
   };
 
-  # Update microcode for Intel CPUs
-  hardware.cpu.intel.updateMicrocode = true;
+  # Configure console keymap
+  console.keyMap = "es";
 
-  # Enable access to Intel SGX privisioning device
-  hardware.cpu.intel.sgx.provision.enable = true;
+  # Enable CUPS to print documents.
+  services.printing.enable = false;
 
-  # Disable PulseAudio
+  # Enable sound with pipewire.
+  sound.enable = true;
   hardware.pulseaudio.enable = false;
+  security.rtkit.enable = true;
+  services.pipewire = {
+    enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+    jack.enable = true;
+    wireplumber.enable = true;
+  };
 
-  # Enable PipeWire
-  services.pipewire.enable = true;
-
-  # Set PipeWire as primary sound server
-  services.pipewire.audio.enable = true;
-
-  # Enable PipeWire's WirePlumber
-  services.pipewire.wireplumber.enable = true;
-
-  # Enable PipeWire PulseAudio emulation
-  services.pipewire.pulse.enable = true;
-
-  # Enable PipeWire JACK audio emulation
-  services.pipewire.jack.enable = true;
-
-  # Enable Pipewire ALSA support
-  services.pipewire.alsa.enable = true;
-
-  # Enable PipeWire's ALSA 32-bit support
-  services.pipewire.alsa.support32Bit = true;
-
-  # Enable X11 server
-  services.xserver.enable = true;
-
-  # Enable display manager to GNOME
-  services.xserver.displayManager.gdm.enable = true;
-
-  # Enable Wayland on GNOME
-  services.xserver.displayManager.gdm.wayland = true;
-
-  # Set desktop manager to GNOME
-  services.xserver.desktopManager.gnome.enable = true;
-
-  # Enable Flatpak
-  services.flatpak.enable = true;
-
-  # Enable libvirt
-  virtualisation.libvirtd.enable = true;
-
-  # Enable OMVF on libvirt
-  virtualisation.libvirtd.qemu.ovmf.enable = true;
-
-  # Enable SWTPM on libvirtd
-  virtualisation.libvirtd.qemu.swtpm.enable = true;
-
-  # Enable KVMGT
-  virtualisation.kvmgt.enable = true;
+  # Enable touchpad support (enabled default in most desktopManager).
+  # services.xserver.libinput.enable = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.mrkenhoo = {
     isNormalUser = true;
     description = "Ken Hoo";
     extraGroups = [ "networkmanager" "wheel" ];
-    packages = with pkgs; [];
+    packages = with pkgs; [
+      google-chrome
+      lutris
+      steam
+      git
+    ];
   };
 
   # Allow unfree packages
@@ -126,47 +121,31 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
+    neovim
     wget
     curl
-    sudo
-    polkit
-    qemu
-    OVMF
+    kitty
     virt-manager
+    swtpm
+    kde-gtk-config
     papirus-icon-theme
-    gnome-browser-connector
+    wineWowPackages.staging
+    winetricks
+    wineWowPackages.waylandFull
+    gamemode
+    gamescope
   ];
 
-  # Exclude GNOME applications
-  environment.gnome.excludePackages = (with pkgs; [
-    gnome-photos
-    gnome-tour
-  ]) ++ (with pkgs.gnome; [
-    cheese # webcam tool
-    gnome-music
-    gnome-terminal
-    gedit # old text editor
-    epiphany
-    geary # email reader
-    evince # document viewer
-    gnome-characters
-    totem # video player
-    tali # poker game
-    iagno # go game
-    hitori # sudoku game
-    atomix # puzzle game    
-  ]);
+  programs = {
+    virt-manager.enable = true;
+    dconf.enable = true;
+    steam.enable = true;
+    gamemode.enable = true;
+    gamescope.enable = true;
+  };
 
-  # Enable gnome-settings-daemon udev rules
-  services.udev.packages = with pkgs; [
-    gnome.gnome-settings-daemon
-  ];
-
-  # Enable dconf for GNOME
-  programs.dconf.enable = true;
-
-  # Enable Wayland for all apps
-  environment.sessionVariables.NIXOS_OZONE_WL = "1";
+  virtualisation.libvirtd.enable = true;
+  virtualisation.libvirtd.qemu.swtpm.enable = true;
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -179,13 +158,12 @@
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
-  # services.openssh.enable = true;
+  services.openssh.enable = false;
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
-  # networking.firewall.enable = false;
   networking.firewall.enable = true;
 
   # This value determines the NixOS release from which the default
@@ -194,6 +172,6 @@
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = "23.05"; # Did you read the comment?
+  system.stateVersion = "23.11"; # Did you read the comment?
 
 }
